@@ -1,46 +1,286 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LuxRental Pro</title>
+    <title>Premium Room Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-        }
-        /* Custom scrollbar for a premium feel */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .sidebar-link:hover { background: rgba(255, 255, 255, 0.1); border-radius: 8px; }
+        @media print { .no-print { display: none !important; } .print-only { display: block !important; } }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "recharts": "https://esm.sh/recharts@^3.6.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
-  }
-}
-</script>
 </head>
-<body>
-    <div id="root"></div>
+<body class="overflow-x-hidden">
+
+<div id="loginPage" class="fixed inset-0 z-[100] bg-slate-900 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-2xl mb-4 shadow-lg shadow-blue-200">
+                <i class="fas fa-building text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800">Quản Lý Phòng Trọ</h2>
+            <p class="text-slate-500">Chào mừng trở lại, vui lòng đăng nhập</p>
+        </div>
+        <div class="space-y-4">
+            <input type="text" id="user" placeholder="Tên đăng nhập" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+            <input type="password" id="pass" placeholder="Mật khẩu" class="w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+            <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition">ĐĂNG NHẬP</button>
+        </div>
+    </div>
+</div>
+
+<div id="app" class="hidden min-h-screen flex">
+    <aside class="no-print w-64 bg-slate-900 text-slate-300 hidden md:flex flex-col p-6 space-y-8">
+        <div class="text-white font-bold text-xl flex items-center">
+            <i class="fas fa-bolt text-yellow-400 mr-2"></i> SMART ADMIN
+        </div>
+        <nav class="flex-grow space-y-2">
+            <a href="#" onclick="switchTab('dashboard')" class="sidebar-link flex items-center p-3 text-white"><i class="fas fa-chart-line w-8"></i> Dashboard</a>
+            <a href="#" onclick="switchTab('rooms')" class="sidebar-link flex items-center p-3"><i class="fas fa-door-open w-8"></i> Danh sách phòng</a>
+            <a href="#" onclick="switchTab('contracts')" class="sidebar-link flex items-center p-3"><i class="fas fa-file-signature w-8"></i> Hợp đồng</a>
+        </nav>
+        <button onclick="location.reload()" class="sidebar-link flex items-center p-3 text-red-400"><i class="fas fa-sign-out-alt w-8"></i> Đăng xuất</button>
+    </aside>
+
+    <div class="flex-grow flex flex-col">
+        <header class="no-print bg-white border-b p-4 flex justify-between items-center px-8">
+            <h2 id="currentTabTitle" class="text-xl font-bold text-slate-800">Tổng quan hệ thống</h2>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm font-medium">Xin chào, Admin</span>
+                <img src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff" class="w-10 h-10 rounded-full border">
+            </div>
+        </header>
+
+        <main class="no-print p-8 flex-grow">
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-slate-500 text-sm">Tổng doanh thu</p>
+                        <h3 class="text-3xl font-bold text-blue-600 mt-2">124.5M</h3>
+                        <p class="text-green-500 text-xs mt-2 font-semibold"><i class="fas fa-arrow-up"></i> +12.5% tháng này</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-slate-500 text-sm">Phòng đang thuê</p>
+                        <h3 id="statOccupied" class="text-3xl font-bold text-slate-800 mt-2">0</h3>
+                        <p class="text-slate-400 text-xs mt-2">Trên tổng số 20 phòng</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                        <p class="text-slate-500 text-sm">Phòng trống</p>
+                        <h3 id="statVacant" class="text-3xl font-bold text-orange-500 mt-2">0</h3>
+                        <p class="text-slate-400 text-xs mt-2">Sẵn sàng đón khách</p>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                    <h4 class="font-bold mb-4">Biểu đồ tăng trưởng doanh thu</h4>
+                    <canvas id="revenueChart" height="100"></canvas>
+                </div>
+            </section>
+
+            <section id="tab-rooms" class="tab-content hidden space-y-6">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-lg">Quản lý căn hộ</h3>
+                    <button onclick="addRoom()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-bold">+ Thêm phòng</button>
+                </div>
+                <div id="roomGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+            </section>
+
+            <section id="tab-contracts" class="tab-content hidden">
+                <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="p-4">Phòng</th>
+                                <th class="p-4">Khách thuê</th>
+                                <th class="p-4">Ngày bắt đầu</th>
+                                <th class="p-4">Tiền cọc</th>
+                                <th class="p-4">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contractTable"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<div id="printArea" class="print-only hidden p-12 bg-white min-h-screen text-slate-900">
+    <div class="flex justify-between border-b-4 border-blue-600 pb-8 mb-8">
+        <div>
+            <h1 class="text-4xl font-extrabold text-blue-600 mb-2 uppercase">Phiếu Thu Tiền</h1>
+            <p class="text-slate-500">Mã hóa đơn: #<span id="p-id"></span></p>
+        </div>
+        <div class="text-right">
+            <h2 class="text-xl font-bold">SMART ROOM RENTAL</h2>
+            <p>Địa chỉ: 123 Đường Quận 1, TP.HCM</p>
+            <p>SĐT: 0900.xxx.xxx</p>
+        </div>
+    </div>
+    <div class="grid grid-cols-2 gap-8 mb-12">
+        <div>
+            <p class="text-slate-500 uppercase text-xs font-bold tracking-widest mb-2">Khách hàng</p>
+            <p class="text-xl font-bold" id="p-tenant"></p>
+            <p id="p-room"></p>
+        </div>
+        <div class="text-right">
+            <p class="text-slate-500 uppercase text-xs font-bold tracking-widest mb-2">Ngày lập</p>
+            <p class="text-xl font-bold" id="p-date"></p>
+        </div>
+    </div>
+    <table class="w-full mb-12 text-lg">
+        <thead>
+            <tr class="bg-slate-100">
+                <th class="p-4 text-left">Mô tả chi tiết</th>
+                <th class="p-4 text-right">Thành tiền</th>
+            </tr>
+        </thead>
+        <tbody id="p-items" class="divide-y"></tbody>
+    </table>
+    <div class="flex justify-end">
+        <div class="w-64 bg-blue-50 p-6 rounded-2xl">
+            <p class="text-blue-600 text-sm font-bold uppercase mb-1">Tổng thanh toán</p>
+            <p class="text-3xl font-black text-blue-900" id="p-total"></p>
+        </div>
+    </div>
+    <div class="mt-20 flex justify-between px-10 text-center font-bold">
+        <div><p class="mb-20 uppercase text-sm tracking-widest">Người nộp tiền</p><p>(Ký tên)</p></div>
+        <div><p class="mb-20 uppercase text-sm tracking-widest">Người thu tiền</p><p>(Ký tên)</p></div>
+    </div>
+</div>
+
+<script>
+    // App State
+    let rooms = JSON.parse(localStorage.getItem('premium_rooms')) || [];
+    
+    // Auth
+    function handleLogin() {
+        const u = document.getElementById('user').value;
+        const p = document.getElementById('pass').value;
+        if(u === 'admin' && p === '123456') {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('app').classList.remove('hidden');
+            initCharts();
+            render();
+        } else {
+            alert('Sai tài khoản hoặc mật khẩu!');
+        }
+    }
+
+    // Tabs
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById('tab-' + tabId).classList.remove('hidden');
+        document.getElementById('currentTabTitle').innerText = tabId.charAt(0).toUpperCase() + tabId.slice(1);
+    }
+
+    // Room Actions
+    function addRoom() {
+        const name = prompt("Số phòng:");
+        const price = prompt("Giá thuê (VNĐ):");
+        const tenant = prompt("Tên khách:");
+        if(name && price) {
+            rooms.push({ 
+                id: Date.now(), 
+                name, 
+                price: parseInt(price), 
+                tenant, 
+                status: tenant ? 'Đã thuê' : 'Trống',
+                date: new Date().toLocaleDateString('vi-VN')
+            });
+            save();
+        }
+    }
+
+    function save() {
+        localStorage.setItem('premium_rooms', JSON.stringify(rooms));
+        render();
+    }
+
+    function render() {
+        // Stats
+        document.getElementById('statOccupied').innerText = rooms.filter(r => r.status === 'Đã thuê').length;
+        document.getElementById('statVacant').innerText = rooms.filter(r => r.status === 'Trống').length;
+
+        // Room Grid
+        const grid = document.getElementById('roomGrid');
+        grid.innerHTML = rooms.map(r => `
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-lg transition cursor-pointer">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${r.status === 'Trống' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}">
+                        ${r.status}
+                    </span>
+                    <button onclick="deleteRoom(${r.id})" class="text-slate-300 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800">Phòng ${r.name}</h3>
+                <p class="text-slate-500 text-sm mt-1">${r.tenant || 'Sẵn sàng để ở'}</p>
+                <div class="mt-6 flex items-center justify-between pt-4 border-t">
+                    <span class="font-bold text-blue-600">${r.price.toLocaleString()}đ</span>
+                    <button onclick="printInvoice(${r.id})" class="text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg text-sm font-bold">Xuất phiếu</button>
+                </div>
+            </div>
+        `).join('');
+
+        // Contract Table
+        const table = document.getElementById('contractTable');
+        table.innerHTML = rooms.filter(r => r.tenant).map(r => `
+            <tr class="border-b hover:bg-slate-50 transition">
+                <td class="p-4 font-bold">Phòng ${r.name}</td>
+                <td class="p-4">${r.tenant}</td>
+                <td class="p-4 text-slate-500">${r.date}</td>
+                <td class="p-4 font-bold text-green-600">${r.price.toLocaleString()}đ</td>
+                <td class="p-4"><button class="text-blue-500 hover:underline">Xem chi tiết</button></td>
+            </tr>
+        `).join('');
+    }
+
+    function deleteRoom(id) {
+        if(confirm('Xóa phòng này?')) {
+            rooms = rooms.filter(r => r.id !== id);
+            save();
+        }
+    }
+
+    function printInvoice(id) {
+        const r = rooms.find(room => room.id === id);
+        if(!r.tenant) return alert("Phòng chưa có khách thuê!");
+        
+        document.getElementById('p-id').innerText = r.id;
+        document.getElementById('p-tenant').innerText = r.tenant;
+        document.getElementById('p-room').innerText = "Số phòng: " + r.name;
+        document.getElementById('p-date').innerText = new Date().toLocaleDateString('vi-VN');
+        document.getElementById('p-total').innerText = r.price.toLocaleString() + " VNĐ";
+        
+        document.getElementById('p-items').innerHTML = `
+            <tr><td class="p-4">Tiền thuê phòng tháng current</td><td class="p-4 text-right">${r.price.toLocaleString()}</td></tr>
+            <tr><td class="p-4">Phí dịch vụ & Vệ sinh</td><td class="p-4 text-right">Miễn phí</td></tr>
+        `;
+
+        window.print();
+    }
+
+    function initCharts() {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12', 'Tháng 1', 'Tháng 2'],
+                datasets: [{
+                    label: 'Doanh thu (Triệu đồng)',
+                    data: [80, 95, 100, 115, 110, 124.5],
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+    }
+</script>
 </body>
 </html>
